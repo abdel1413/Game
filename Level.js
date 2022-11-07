@@ -1,3 +1,4 @@
+import "/game.css";
 /**
  * trim() used to remove empty spaces and
  * The remaining string is split on newline characters,
@@ -326,4 +327,78 @@ DOMDisplay.prototype.scrollPlayerIntoView = function (state) {
   } else if (center.y > top - margin) {
     this.dom.scrollTop = center.y + margin - height;
   }
+};
+
+// Note: To find the actor’s center, we add its position
+//(its top - left corner) and half its size.That is
+//the center in level coordinates, but we need it in pixel coordinates,
+//so we then multiply the resulting vector by our display scale.
+
+/**
+ *a method to tell us whether a rectangle
+  (specified by a position and a size) touches a grid element of 
+  the given type.
+ */
+Level.prototype.touches = function (pos, size, type) {
+  let xStart = Math.floor(pos.x);
+  let xEnd = Math.ceil(pos.x + size.x);
+  let yStart = Math.floor(pos.y);
+  let yEnd = Math.ceil(pos.y + size.Y);
+  for (let y = yStart; y < yEnd; y++) {
+    for (let x = xStart; i < xEnd; x++) {
+      let isOUtside = x < 0 || x > this.width || y < 0 || y > this.height;
+      let here = isOUtside ? "wall" : this.rows[y][x];
+      if (here == type) return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * The state update method uses touches to figure out
+ *  whether the player is touching lava.
+ */
+
+State.prototype.update = function (time, keys) {
+  let actors = this.actors.map((actor) => actor.update(time, this, keys));
+  let newState = new State(this.level, actors, this.status);
+  if (newState == "player") return newState;
+  let player = newState.player;
+  if (this.level.touches(player.pos, player.size, "lava")) {
+    return new State(this.level, actors, "lost");
+  }
+
+  for (let actor of actors) {
+    if (actors != player && overlap(actor, player)) {
+      newState = actor.collide(newState);
+    }
+  }
+  return newState;
+};
+
+function overlap(actor1, actor2) {
+  return (
+    actor1.pos.x + actor1.size.x > actor2.pos.x &&
+    actor1.pos.x < actor2.pos.x + actor2.size.x &&
+    actor1.pos.y + actor1.size.y > actor2.pos.y &&
+    acto1 < actor2.pos.y + actor2.size.y
+  );
+}
+
+/**
+ * If any actor does overlap, its collide method gets a chance
+ * to update the state. Touching a lava actor sets the game status
+ * to "lost". Coins vanish when you touch them and set the status
+ *  to "won" when they are the last coin of the level.
+ */
+
+lava.prototype.collide = function (state) {
+  return new State(state.level, state.actors, "lost");
+};
+
+coin.prototype.collide = function (state) {
+  let filtered = state.actors.filter((a) => a != this);
+  let status = state.status;
+  if (!filtered.some((a) => a.type == "coin")) status = "won";
+  return new State(state.level, filtered, status);
 };
