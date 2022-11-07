@@ -197,7 +197,7 @@ console.log(`${instancelevel.width} by ${instancelevel.height}`);
  * create an element and give it some attributes and child nodes:
  */
 function elt(name, attrs, ...children) {
-  let dom = document.createElement("name");
+  let dom = document.createElement(name);
 
   for (let att of Object.keys(attrs)) {
     dom.setAttribute(att, attrs[att]);
@@ -222,4 +222,55 @@ class DOMDisplay {
   clear() {
     this.dom.remove();
   }
+}
+
+//The scale constant gives the number of pixels that a
+//single unit takes up on the screen
+const scale = 20;
+function drawGrid(level) {
+  return elt(
+    "table",
+    {
+      class: "background",
+      style: `width:${level.width * scale} px`,
+    },
+    ...level.rows.map((row) =>
+      elt(
+        "tr",
+        { style: `height: ${scale} px` },
+        ...row.map((type) => elt("td", { class: type }))
+      )
+    )
+  );
+}
+
+/**
+ *  the background is drawn as a <table> element.
+ *  This nicely corresponds to the structure of the rows property
+ * of the level—each row of the grid is turned into a
+ *  table row (<tr> element). The strings in the grid are used as
+ * class names for the table cell (<td>) elements. The spread
+ * operator is used to pass arrays of child nodes to elt as separate
+ *  arguments
+ */
+
+/**
+ * draw each actor by creating a DOM element for it and setting that
+ *  element’s position and size based on the actor’s properties.
+ * The values have to be multiplied by scale to go from game units
+ *  to pixels.
+ */
+function drawActor(actors) {
+  return elt(
+    "div",
+    {},
+    actors.map((actor) => {
+      let rect = elt("div", { class: `actor ${actor.type}` });
+      rect.style.width = `${actor.size.x * scale}px`;
+      rect.style.height = `${actor.size.y * scale}px`;
+      rect.style.left = `${actor.pos.x * scale}px`;
+      rect.style.top = `${actor.pos.y * scale}px`;
+      return rect;
+    })
+  );
 }
