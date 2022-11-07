@@ -24,7 +24,7 @@ class Level {
         //and actor characters to classes
         //create a Vector object with coord xy and ch wich is pushed in
         //startActor array
-        let type = LevelChar[ch];
+        let type = levelChars[ch];
         if (typeof type === "string") return type;
         this.startActors.push(type.create(new Vec(x, y), ch));
         return "empty";
@@ -152,3 +152,74 @@ class coin {
 }
 
 coin.prototype.size = new Vec(0.6, 0.6);
+
+//To avoid a situation where all coins move up and down
+//synchronously, the starting phase of each coin is randomized
+//We multiply the value returned by Math.random by that number
+//to give the coin a random starting position on the wave
+
+/**
+ * define the levelChars object that maps
+ * plan characters to either background grid types or actor classes.
+ */
+let levelChars = {
+  ".": "empty",
+  "#": "wall",
+  "+": "lava",
+  "@": Player,
+  o: coin,
+  "|": lava,
+  v: lava,
+  "=": lava,
+};
+
+var simpleLevelPlan = `
+......................
+..#................#..
+..#..............=.#..
+..#.........o.o....#..
+..#.@......#####...#..
+..#####............#..
+......#++++++++++++#..
+......##############..
+......................`;
+
+//create a level instance
+let instancelevel = new Level(simpleLevelPlan);
+console.log(`${instancelevel.width} by ${instancelevel.height}`);
+//22 by 9
+
+/**
+ *
+ * @param {*} name
+ * @param {*} attrs
+ * @param  {...any} children
+ * create an element and give it some attributes and child nodes:
+ */
+function elt(name, attrs, ...children) {
+  let dom = document.createElement("name");
+
+  for (let att of Object.keys(attrs)) {
+    dom.setAttribute(att, attrs[att]);
+  }
+
+  for (let child of children) {
+    dom.append(child);
+  }
+}
+
+/**
+ * A display is created by giving it a parent element
+ *  to which it should append itself and a level object.
+ */
+
+class DOMDisplay {
+  constructor(parent, level) {
+    this.dom = elt("div", { class: "game" }, drawGrid(level));
+    this.actorLayer = null;
+    parent.appendchild(this.dom);
+  }
+  clear() {
+    this.dom.remove();
+  }
+}
