@@ -260,7 +260,7 @@ function drawGrid(level) {
  * The values have to be multiplied by scale to go from game units
  *  to pixels.
  */
-function drawActor(actors) {
+function drawActors(actors) {
   return elt(
     "div",
     {},
@@ -274,3 +274,22 @@ function drawActor(actors) {
     })
   );
 }
+
+/**
+ *Use syncState method to make the display show a given  state.
+ * we first remove the old actor graphics, if any, and then
+ * redraw the actors in their new positions.
+ * It may be tempting to try to reuse the DOM elements for actors,
+ *  but to make that work, we would need a lot of additional bookkeeping
+ * to associate actors with DOM elements and to make sure we remove
+ *  elements when their actors vanish.
+ */
+DOMDisplay.prototype.syncState = function (state) {
+  if (this.actorLayer) {
+    this.actorLayer.remove();
+  }
+  this.actorLayer = drawActors(state.actors);
+  this.dom.appendchild(this.actorLayer);
+  this.dom.className = `game ${state.status}`;
+  this.scrollPlayerIntoView(state);
+};
