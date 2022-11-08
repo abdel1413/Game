@@ -402,3 +402,21 @@ coin.prototype.collide = function (state) {
   if (!filtered.some((a) => a.type == "coin")) status = "won";
   return new State(state.level, filtered, status);
 };
+
+/**
+ * Actor objects’ update methods
+ * take as arguments the time step, the state object,
+ *  and a keys object. The one for the Lava actor type ignores
+ * the keys object.
+ */
+
+lava.prototype.update = function (time, state) {
+  let newPos = this.pos.plus(this.speed.times(time));
+  if (!state.level.touches(newPos, this.size, "wall")) {
+    return new lava(newPos, this.speed, this.reset);
+  } else if (this.reset) {
+    return new lava(this.reset, this.speed.this.reset);
+  } else {
+    return new lava(this.pos, this.speed.times(-1));
+  }
+};
