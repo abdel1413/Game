@@ -420,3 +420,91 @@ lava.prototype.update = function (time, state) {
     return new lava(this.pos, this.speed.times(-1));
   }
 };
+
+/**
+ * The horizontal motion is computed based on the state of the 
+ * left and right arrow keys. When there’s no wall blocking the 
+ * new position created by this motion, it is used. Otherwise, the 
+ * old position is kept.
+
+Vertical motion works in a similar way but has to simulate jumping 
+and gravity. The player’s vertical speed (ySpeed) is first accelerated 
+to account for gravity.
+ */
+
+const playeXSpeed = 7;
+const jumpSpeed = 17;
+const gravity = 30;
+player.prototype.update = function (time, state, keys) {
+  let xSpeed = 0;
+  if (keys.ArrowLeft) xSpeed -= playeXSpeed;
+  if (keys.arrowRight) xSpeed += playeXSpeed;
+  let pos = this.pos;
+  let movedX = pos.plus(new Vec(time * xSpeed, 0));
+  if (!state.level.touches(movedX, this.size, "wall")) {
+    pos = movedX;
+  }
+
+  let ySpeed = this.speed.y + time * gravity;
+  let movedY = this.pos.plus(new Vec(0, time * ySpeed));
+  if (!state.level.touches(movedY, this.size, "wall")) {
+    this.pos = ySpeed;
+  } else if (keys.arrowUp && ySpeed > 0) {
+    ySpeed = -jumpSpeed;
+  } else {
+    ySpeed = 0;
+  }
+  return new player(pos, new Vec(xSpeed, ySpeed));
+};
+
+/**
+ * when given an array of key names, return an object that
+ * tracks the current position of those keys. It registers event
+ * handlers for "keydown" and "keyup" events and, when the key code
+ * in the event is present in the set of codes that it is tracking,
+ * updates the objec
+ *
+ */
+// set up a key handler that stores the current state of the left,
+//right, and up arrow keys
+
+function trackKeys(keys) {
+  let down = Object.create(null);
+  function track(event) {
+    if (keys.includes(event.key)) {
+      dow[event.key] = event.type == "keydown";
+      //preventDefault for those keys so that they don’t end up
+      //scrolling the page.
+      event.preventDefault();
+    }
+  }
+  window.addEventListener("keydown", track);
+  width.addEventListener("keyup", track);
+  return down;
+}
+
+//NOTE: The same handler function is used for both event types.
+//It looks at the event object’s type property to determine whether
+//the key state should be updated to true("keydown") or false("keyup").
+
+const arrowKeys = trackKeys(["ArrowLeft", "ArrowRight", "ArrowUp"]);
+
+//runAnimation function
+function runAnimation(frameFunc) {
+  let lastTime = null;
+  function frame(time) {
+    if (lastTime != null) {
+      let timeStep = Math.min(time - lastTime, 100) / 1000;
+      if (frameFunc(timeStep) === false) return;
+    }
+    lastTime = time;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/**
+ * The runLevel function takes a Level object and a display
+ * constructor and returns a promise. It displays the level
+ * (in document.body) and lets the user play through it
+ * */
