@@ -439,19 +439,6 @@ Coin.prototype.update = function (time) {
   );
 };
 
-//var wobbleSpeed = 8,
-//   wobbleDist = 0.07;
-
-// Coin.prototype.update = function (time) {
-//   let wobble = this.wobble + time * wobbleSpeed;
-//   let wobblePos = Math.sin(wobble) * wobbleDist;
-//   return new Coin(
-//     this.basePos.plus(new Vec(0, wobblePos)),
-//     this.basePos,
-//     wobble
-//   );
-// };/
-
 // /**
 //  * The horizontal motion is computed based on the state of the
 //  * left and right arrow keys. When there’s no wall blocking the
@@ -489,16 +476,16 @@ Player.prototype.update = function (time, state, keys) {
   return new Player(pos, new Vec(xSpeed, ySpeed));
 };
 
-// /**
-//  * when given an array of key names, return an object that
-//  * tracks the current position of those keys. It registers event
-//  * handlers for "keydown" and "keyup" events and, when the key code
-//  * in the event is present in the set of codes that it is tracking,
-//  * updates the objec
-//  *
-//  */
-// // set up a key handler that stores the current state of the left,
-// //right, and up arrow keys
+/**
+ * when given an array of key names, return an object that
+ * tracks the current position of those keys. It registers event
+ * handlers for "keydown" and "keyup" events and, when the key code
+ * in the event is present in the set of codes that it is tracking,
+ * updates the objec
+ *
+ */
+// set up a key handler that stores the current state of the left,
+//right, and up arrow keys
 
 function trackKeys(keys) {
   let down = Object.create(null);
@@ -512,16 +499,20 @@ function trackKeys(keys) {
   }
   window.addEventListener("keydown", track);
   window.addEventListener("keyup", track);
+  down.unregister = () => {
+    window.removeEventListener("keydown", track);
+    window.removeEventListener("keyup", track);
+  };
   return down;
 }
 
-// //NOTE: The same handler function is used for both event types.
-// //It looks at the event object’s type property to determine whether
-// //the key state should be updated to true("keydown") or false("keyup").
+//NOTE: The same handler function is used for both event types.
+//It looks at the event object’s type property to determine whether
+//the key state should be updated to true("keydown") or false("keyup").
 
 const arrowKeys = trackKeys(["ArrowLeft", "ArrowRight", "ArrowUp"]);
 
-// //runAnimation function
+//runAnimation function
 function runAnimation(frameFunc) {
   let lastTime = null;
   function frame(time) {
@@ -535,43 +526,92 @@ function runAnimation(frameFunc) {
   requestAnimationFrame(frame);
 }
 
-// /**
-//  * The runLevel function takes a Level object and a display
-//  * constructor and returns a promise. It displays the level
-//  * (in document.body) and lets the user play through it
-//  * */
+/**
+ * The runLevel function takes a Level object and a display
+ * constructor and returns a promise. It displays the level
+ * (in document.body) and lets the user play through it
+ * */
 function runLevel(level, Display) {
   let display = new Display(document.body, level);
   let state = State.start(level);
   let ending = 1;
+  let running = "yes";
+
   return new Promise((resolve) => {
-    runAnimation((time) => {
+    function escHandler(event) {
+      if (event.key != "Escape") return;
+      event.preventDefault();
+      if (running == "no") {
+        running = "yes";
+        runAnimation(frame);
+      } else if (running == "yes") {
+        running = "pausing";
+      } else {
+        running = "yes";
+      }
+    }
+    window.addEventListener("keydown", escHandler);
+    let arrowKeys = trackKeys(["ArrowLeft", "ArrowRight", "ArrowUp"]);
+    function frame(time) {
+      if (running == "pausing") {
+        running = "no";
+        return false;
+      }
+
       state = state.update(time, arrowKeys);
       display.syncState(state);
-      if (state.status === "playing") {
+      if (state.status == "playing") {
         return true;
       } else if (ending > 0) {
         ending -= time;
-        return true;
       } else {
         display.clear();
+        window.removeEventListener("keydown", escHandler);
+        arrowKeys.unregister();
         resolve(state.status);
         return false;
       }
-    });
+    }
+
+    // runAnimation((time) => {
+
+    //   if (state.status === "playing") {
+    //     return true;
+    //   } else if (ending > 0) {
+    //     ending -= time;
+    //     return true;
+    //   } else {
+    //     display.clear();
+    //     resolve(state.status);
+    //     return false;
+    //   }
+    // });
+    runAnimation(frame);
   });
 }
 
-// /**
-//  * When a level is completed, we move on to the next level.
-//  * This can be expressed by the following function, which takes
-//  * an array of level plans (strings) and a display constructor:
-//  */
+/**
+ * When a level is completed, we move on to the next level.
+ * This can be expressed by the following function, which takes
+ * an array of level plans (strings) and a display constructor:
+ */
 
 async function runGame(plans, Display) {
-  for (let level = 0; level < plans.length; ) {
+  let gameStatus = document.createElement("h1");
+  gameStatus.style.color = "red";
+
+  let lives = 3;
+  for (let level = 0; level < plans.length && lives > 0; ) {
     let status = await runLevel(new Level(plans[level]), Display);
     if (status === "won") level++;
+    else lives--;
   }
-  console.log("you won");
+  if (lives > 0) {
+    console.log("You won");
+    gameStatus.innerHTML = "You won!";
+  } else {
+    console.log("Game over");
+    gameStatus.innerHTML = "Game over";
+    document.body.appendChild(gameStatus);
+  }
 }
