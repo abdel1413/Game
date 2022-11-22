@@ -732,3 +732,52 @@ CanvasDisplay.prototype.updateViewport = function () {
 
 //NOTE:The calls to Math.max and Math.min ensure that
 //the viewport does not end up showing space outside of the level
+
+/**
+ * When clearing the display, we’ll use a slightly
+ * different color depending on whether the game is won (brighter)
+ * or lost (darker).
+ */
+CanvasDisplay.prototype.clearDisplay = function (status) {
+  if (status == "won") {
+    this.cx.fillStyle = "rgb( 68,191,255)";
+  } else if (status == "lost") {
+    this.cx.fillStyle = "rgb(44,136,214)";
+  } else {
+    this.cx.fillStyle = "rgb(52,166,251)";
+  }
+
+  this.cx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+};
+
+//draw the background
+let otherSprite = document.createElement("img");
+otherSprite.src = "sprites.png";
+
+CanvasDisplay.prototype.drawBackground = function (level) {
+  let { left, width, top, height } = this.viewport;
+  let xStart = Math.floor(left);
+  let xEnd = Math.ceil(left + width);
+  let yStart = Math.floor(top);
+  let yEnd = Math.ceil(top + height);
+  for (let y = yStart; y < yEnd; y++) {
+    for (let x = xStart; x < xEnd; x++) {
+      let tile = level.rows[y][x];
+      if (tile == "empty") continue;
+      let screenX = (x - left) * scale;
+      let screenY = (y - top) * scale;
+      let tileX = tile == "lava" ? scale : 0;
+      this.cx.drawImage(
+        otherSprite,
+        tileX,
+        0,
+        scale,
+        scale,
+        screenX,
+        screenY,
+        scale,
+        scale
+      );
+    }
+  }
+};
