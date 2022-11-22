@@ -343,7 +343,6 @@ function drawActors(actors) {
 //  * to associate actors with DOM elements and to make sure we remove
 //  *  elements when their actors vanish.
 //  */
-// //////
 
 DOMDisplay.prototype.syncState = function (state) {
   if (this.actorLayer) this.actorLayer.remove();
@@ -668,3 +667,68 @@ async function runGame(plans, Display) {
     document.body.appendChild(gameStatus);
   }
 }
+
+class CanvasDisplay {
+  constructor(parent, level) {
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = Math.min(600, level.width * scale);
+    this.canvas.height = Math.min(450, level.height * scale);
+    parent.appendChild(this.canvas);
+    this.cx = this.canvas.getContext("2d");
+    this.flipPlayer = false;
+    this.viewport = {
+      left: 0,
+      top: 0,
+      width: this.canvas.width / scale,
+      height: this.canvas.height / scale,
+    };
+  }
+  clear() {
+    this.canvas.remove();
+  }
+}
+
+/**
+ * The syncState method first computes a new viewport and then
+ *  draws the game scene at the appropriate position
+ */
+
+CanvasDisplay.prototype.syncState = function (state) {
+  this.updateViewport(state);
+  this.clearDisplay(state.status);
+  this.drawBackground(state.level);
+  this.drawActors(state.actors);
+};
+
+/**
+ * The updateViewport method is similar to DOMDisplay’s
+ *  scrollPlayerIntoView method. It checks whether the player is
+ * too close to the edge of the screen and moves the viewport when
+ * this is the case.
+ */
+
+CanvasDisplay.prototype.updateViewport = function () {
+  let view = this.viewport;
+  let margin = view.width / 3;
+  let center = player.pos.plus(player.size.times(0.5));
+
+  if (center.x < view.left + margin) {
+    view.left = Math.max(center.x - margin, 0);
+  } else if (center.x > view.left + view.width - margin) {
+    view.left = Math.min(
+      center.x + margin - view.width,
+      state.level.width - view.width
+    );
+  }
+  if (center.y < view.top + margin) {
+    view.top = Math.max(center.y - margin, 0);
+  } else if (center.y > view.top + view.height - margin) {
+    center.top = Math.min(
+      center.y + margin - view.height,
+      state.level.height - view.height
+    );
+  }
+};
+
+//NOTE:The calls to Math.max and Math.min ensure that
+//the viewport does not end up showing space outside of the level
